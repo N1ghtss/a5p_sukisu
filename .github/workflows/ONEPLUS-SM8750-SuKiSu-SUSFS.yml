@@ -1,4 +1,4 @@
-name: 一加13和a5p构建
+name: ace5pro_suki
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +12,6 @@ on:
         required: true
         default: 'oneplus_ace5_pro'
         options: 
-         - oneplus_13
          - oneplus_ace5_pro
       CPUD:
         description: "处理器代号"
@@ -98,7 +97,7 @@ jobs:
       - name: Set up SukiSU
         run: |
          cd kernel_workspace/kernel_platform
-         curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-dev
+         curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-dev
          cd ./KernelSU
          KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10606)
          echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
@@ -199,7 +198,6 @@ jobs:
          cp -r ./sched_ext/* ./common/kernel/sched
          rm -rf ./sched_ext/.git
          cd common/kernel/sched
-         sed -i.bak '/# include "ext.c"/a\# include "hmbird_sched_proc_main.c"\n#endif\n\n#ifdef CONFIG_SLIM_SCHED\n# include "slim_sysctl.c"' build_policy.c
          
       - name: Set Kernel build timestamp
         run: |
@@ -208,12 +206,13 @@ jobs:
           
       - name: Build Kernel
         run: |
-           cd kernel_workspace
-           LTO=thin SYSTEM_DLKM_RE_SIGN=0 BUILD_SYSTEM_DLKM=0 KMI_SYMBOL_LIST_STRICT_MODE=0 ./kernel_platform/oplus/build/oplus_build_kernel.sh ${{ github.event.inputs.CPUD }} ${{ github.event.inputs.BUILD_METHOD }}
+           export SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}
+           cd kernel_workspace/kernel_platform
+           tools/bazel run --config=fast --config=stamp --lto=thin //common:kernel_aarch64_dist -- --dist_dir=dist
 
       - name: Make AnyKernel3
         run: |
-         cd kernel_workspace
+         cd kernel_workspace/kernel_platform/dist/
          curl -LO https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux
          chmod +x patch_linux
          ./patch_linux
