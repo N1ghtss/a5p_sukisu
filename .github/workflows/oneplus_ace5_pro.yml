@@ -25,7 +25,7 @@ on:
       KERNEL_NAME:
         description: "内核名称修改(中文不行)"
         required: true
-        default: '-By-kuan-FutabaWa'
+        default: '-By-Yeyuefeng'
       KERNEL_TIME:
        description: "内核构建日期更改(默认为原厂)"
        required: true
@@ -33,20 +33,20 @@ on:
       enable_feature_x:
        description: "是否启用kpm"
        required: false
-       default: false
+       default: true
        type: boolean
       enable_feature_y:
        description: "是否启用lz4kd"
        required: false
-       default: false
+       default: true
        type: boolean
       enable_feature_z:
        description: "是否添加风驰驱动"
        required: false
-       default: false
+       default: true
        type: boolean
-      
-       
+
+
 
 
 jobs:
@@ -66,11 +66,11 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
-          
+
       - name: Configure Git
         run: |
-         git config --global user.name "Futaba"
-         git config --global user.email "3199167602@qq.com"
+         git config --global user.name "Whisper Selene"
+         git config --global user.email "635349188@qq.com"
 
       - name: Install dependencies
         run: |
@@ -90,7 +90,7 @@ jobs:
          repo --trace sync -c -j$(nproc --all) --no-tags
          rm kernel_platform/common/android/abi_gki_protected_exports_* || echo "No protected exports!"
          rm kernel_platform/msm-kernel/android/abi_gki_protected_exports_* || echo "No protected exports!"
-         
+
       - name: Set up SukiSU
         run: |
          cd kernel_workspace/kernel_platform
@@ -100,7 +100,7 @@ jobs:
          echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
          export KSU_VERSION=$KSU_VERSION
          sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
-        
+
       - name: Set up susfs
         run: |
            cd kernel_workspace
@@ -126,7 +126,7 @@ jobs:
            cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
            patch -p1 -F 3 < syscall_hooks.patch
            echo "完成"
-      
+
       - name: Apply HMBird GKI patch
         run: |
          cd kernel_workspace/kernel_platform/common/drivers
@@ -208,14 +208,14 @@ jobs:
          git add -A
          git commit -m "Add HMBird GKI patch" || true
 
- 
+
       - name: Apply lz4kd Patches
         if: ${{inputs.enable_feature_y }}
         run: |
           cd kernel_workspace/kernel_platform/common
             cp ../../SukiSU_patch/other/zram/zram_patch/${{ github.event.inputs.KERNEL_VERSION }}/lz4kd.patch ./
             patch -p1 -F 3 < lz4kd.patch || true
-           
+
       - name: Add SUSFS Configuration Settings
         run: |
           cd kernel_workspace/kernel_platform
@@ -251,7 +251,7 @@ jobs:
           sudo sed -i 's/check_defconfig//' ./common/build.config.gki
           cd common
           git add -A && git commit -a -m "BUILD Kernel"
-      
+
       - name: Add KPM Configuration Settings
         if: ${{inputs.enable_feature_x }}
         run: |
@@ -262,7 +262,7 @@ jobs:
           sudo sed -i 's/check_defconfig//' ./common/build.config.gki
           cd common
           git add -A && git commit -a -m "BUILD Kernel"
-          
+
       - name: Add make name
         run: |
          cd kernel_workspace/kernel_platform
@@ -277,12 +277,12 @@ jobs:
          cp -r ./sched_ext/* ./common/kernel/sched
          rm -rf ./sched_ext/.git
          cd common/kernel/sched
-         
+
       - name: Set Kernel build timestamp
         run: |
           export SOURCE_DATE_EPOCH=$(date -d "${{ github.event.inputs.KERNEL_TIME }}" +%s)
           echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH" >> $GITHUB_ENV
-          
+
       - name: Build Kernel
         run: |
            export SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}
@@ -297,7 +297,7 @@ jobs:
          ./patch_linux
          rm -f Image
          mv oImage Image
-         
+
       - name: Make AnyKernel3
         run: |
          git clone https://github.com/Kernel-SU/AnyKernel3.git --depth=1      
@@ -310,7 +310,7 @@ jobs:
         with:
          name: SuKiSu_${{ env.KSUVER }}_${{ github.event.inputs.FEIL }}
          path: ./AnyKernel3/*
-         
+
       - name: Upload Image
         uses: actions/upload-artifact@v4
         with:
