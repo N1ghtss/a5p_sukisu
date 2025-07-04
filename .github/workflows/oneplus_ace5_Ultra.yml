@@ -1,32 +1,32 @@
-name: oneplus_ace5_pro
+name: oneplus_ace5_Ultra
 on:
   workflow_dispatch:
     inputs:
       KERNEL_SUFFIX:
         description: '内核名称修改(可改中文和emoji)'
         required: true
-        default: '-By-Whisper-Selene'
+        default: '-酷安FutabaWa'
       KERNEL_TIME:
        description: "内核构建日期更改(默认为原厂)"
        required: true
-       default: 'Tue Dec 17 23:36:49 UTC 2024'
+       default: 'Fri Apr 18 19:35:07 UTC 2025'
       enable_feature_x:
        description: "是否启用kpm"
        required: false
-       default: true
+       default: false
        type: boolean
       enable_feature_y:
        description: "是否启用lz4kd"
        required: false
-       default: true
+       default: false
        type: boolean
       enable_feature_z:
        description: "是否添加风驰驱动"
        required: false
-       default: true
+       default: false
        type: boolean
-
-
+      
+       
 
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
-      CCACHE_DIR: /home/runner/.ccache
+      CCACHE_DIR: /home/runner/.ccache  
       CCACHE_MAXSIZE: 8G
     steps:
       - name: Maximize build space
@@ -48,7 +48,7 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
-
+          
       - name: Configure Git
         run: |
          git config --global user.name "Futaba"
@@ -77,11 +77,11 @@ jobs:
       - name: Initialize repo and sync
         run: |
          mkdir kernel_workspace && cd kernel_workspace
-         repo init -u https://github.com/HanKuCha/kernel_manifest.git -b refs/heads/oneplus/sm8750 -m JiuGeFaCai_oneplus_ace5_pro_v.xml --depth=1
+         repo init -u https://github.com/HanKuCha/kernel_manifest.git -b refs/heads/oneplus/sm8750 -m oneplus_ace5_Ultra.xml --depth=1
          repo --trace sync -c -j$(nproc --all) --no-tags
          rm kernel_platform/common/android/abi_gki_protected_exports_* || echo "No protected exports!"
          rm kernel_platform/msm-kernel/android/abi_gki_protected_exports_* || echo "No protected exports!"
-
+         
       - name: Set up SukiSU
         run: |
          cd kernel_workspace/kernel_platform
@@ -92,7 +92,7 @@ jobs:
          export KSU_VERSION=$KSU_VERSION
          sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
       
-
+        
       - name: Set up susfs
         run: |
            cd kernel_workspace
@@ -111,14 +111,11 @@ jobs:
            # Apply patches
            cd ./common
 
-           sed -i 's/-32,12 +32,38/-32,11 +32,37/g' 50_add_susfs_in_gki-android15-6.6.patch
-           sed -i '/#include <trace\/hooks\/fs.h>/d' 50_add_susfs_in_gki-android15-6.6.patch
-
            patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
            cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
            patch -p1 -F 3 < syscall_hooks.patch
            echo "完成"
-
+      
       - name: Apply HMBird GKI patch
         run: |
          cd kernel_workspace/kernel_platform/common/drivers
@@ -200,14 +197,14 @@ jobs:
          git add -A
          git commit -m "Add HMBird GKI patch" || true
 
-
+ 
       - name: Apply lz4kd Patches
         if: ${{inputs.enable_feature_y }}
         run: |
           cd kernel_workspace/kernel_platform/common
             cp ../../SukiSU_patch/other/zram/zram_patch/6.6/lz4kd.patch ./
             patch -p1 -F 3 < lz4kd.patch || true
-
+           
       - name: Add SUSFS Configuration Settings
         run: |
           cd kernel_workspace/kernel_platform
@@ -254,7 +251,7 @@ jobs:
           sudo sed -i 's/check_defconfig//' ./common/build.config.gki
           cd common
           git add -A && git commit -a -m "BUILD Kernel"
-
+      
       - name: Add KPM Configuration Settings
         if: ${{inputs.enable_feature_x }}
         run: |
@@ -265,7 +262,7 @@ jobs:
           sudo sed -i 's/check_defconfig//' ./common/build.config.gki
           cd common
           git add -A && git commit -a -m "BUILD Kernel"
-
+          
       - name: Add make name
         run: |
          cd kernel_workspace/kernel_platform
@@ -279,7 +276,7 @@ jobs:
          git clone https://github.com/HanKuCha/sched_ext.git
          cp -r ./sched_ext/* ./common/kernel/sched
          rm -rf ./sched_ext/.git
-         cd common/kernel/sched  
+         cd common/kernel/sched
 
       - name: Build Kernel
         run: |
@@ -289,7 +286,7 @@ jobs:
           sudo apt install libelf-dev
           cd kernel_workspace/kernel_platform/common
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang RUSTC=../../prebuilts/rust/linux-x86/1.73.0b/bin/rustc PAHOLE=../../prebuilts/kernel-build-tools/linux-x86/bin/pahole LD=ld.lld  HOSTLD=ld.lld O=out KCFLAGS+=-O2 gki_defconfig all
-
+          
       - name: Apply Linux Patch
         run: |
          cd kernel_workspace/kernel_platform/common/out/arch/arm64/boot
@@ -298,7 +295,7 @@ jobs:
          ./patch_linux
          rm -f Image
          mv oImage Image
-
+         
       - name: Make AnyKernel3
         run: |
          git clone https://github.com/Kernel-SU/AnyKernel3.git --depth=1      
@@ -309,5 +306,5 @@ jobs:
       - name: Upload AnyKernel3
         uses: actions/upload-artifact@v4
         with:
-         name: SuKiSu_${{ env.KSUVER }}_oneplus_ace5_pro
+         name: SuKiSu_${{ env.KSUVER }}_oneplus_ace5_Ultra
          path: ./AnyKernel3/*
